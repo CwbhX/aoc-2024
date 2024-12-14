@@ -50,12 +50,60 @@ fn load_inputs(input_filename: &str) -> Vec<Vec<i32>> {
     return levels_of_reports;
 }
 
-fn is_report_safe(report: Vec<i32>) -> bool {
+// Important to accept a reference so that the function borrows the input vector - I THINK. Otherwise I would need to perform an expensive copy/clone?
+fn is_report_safe(report: &Vec<i32>) -> bool {
+    let mut is_safe = true; // Default to true unless proven otherwise
+    let mut initial_ascending = true; // Default ascending to true prior to checking the first pair to not use optionals
 
-    return true;
+    // If let's work on tuples which is fucking insane magic shit but lets do it
+    if let (Some(&first_num), Some(&second_num)) = (report.first(), report.get(1)){ // Using the & in the Some, means that the variable we're creating in Some will match and copy the reference returned to us
+        if first_num - second_num > 0{
+            initial_ascending = false;
+        }
+    }else{ // If the array is empty or doesn't have at least 2 numbers gtfo it aint safe fam
+        return false;
+    }
+
+    // Main loop to slide compare numbers
+    for (index, num) in report.iter().enumerate(){
+        // Skip the last element if we're at the end since no point in checking and prevents edge case error
+        if index == report.len()-1{
+            continue;
+        }
+
+        let local_ascending = *num - report[index+1] < 0; // See if this pair is ascending or descending
+        if local_ascending != initial_ascending{
+            is_safe = false; // If this slope doesnt match initial, quit out
+            println!("Slope changed! Initial slope: {}, new slope: {}. For pair: {}, {}", initial_ascending, local_ascending, num, report[index+1]);
+            break;
+        }
+        if *num - report[index+1] == 0{ // If the pair's slope is 0 -- ACTUALLY THIS WILL NEVER BE RUN CAUSE I EXCLUDE THIS ABOVE IN MY CONDTIONIAL LOOK AT HOW SMART I AM HEHEHE
+            is_safe = false;
+            // println!("Slope is zero!");
+            break;
+        }
+
+        // I don't have to dereference num here (which is given as a reference from enumerate) since i32 implements operator traits and the complier will do it for me
+        if (num - report[index+1]).abs() < 1 || (num - report[index+1]).abs() > 3{
+            is_safe = false;
+            break;
+        }
+    }
+
+    return is_safe;
 }
 
 fn main() {
+    let mut safe_report_count = 0;
+
     let levels_of_reports = load_inputs("src/input.txt");
-    println!("{:#?}", levels_of_reports);
+    //println!("{:#?}", levels_of_reports);
+
+    for report in &levels_of_reports{
+        if is_report_safe(report){ // This will proceed if true, don't need to write == true explicitly
+            safe_report_count += 1;
+        }
+    }
+
+    println!("Total Safe Reports is: {}", safe_report_count);
 }
